@@ -851,6 +851,99 @@ st.markdown(
     .video-box { border: 1px solid #e3e3e3; border-radius: 14px; padding: 16px; background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.04); }
     .video-box h3 { margin-top: 0; }
     @media (max-width: 900px) {
+        .block-container {
+            padding-left: 0.45rem;
+            padding-right: 0.45rem;
+            padding-top: 1rem;
+        }
+        .block-container [data-testid="stHorizontalBlock"] {
+            flex-wrap: wrap;
+        }
+        .block-container [data-testid="column"],
+        .block-container [data-testid="stColumn"] {
+            flex: 1 1 100%;
+            min-width: 100%;
+            width: 100%;
+        }
+        .st-key-periodic_main_grid,
+        .st-key-periodic-main-grid,
+        .st-key-periodic_lanth_grid,
+        .st-key-periodic_act_grid,
+        .st-key-periodic-lanth-grid,
+        .st-key-periodic-act-grid {
+            zoom: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            padding: 2px 0 12px;
+            -webkit-overflow-scrolling: touch;
+        }
+        .st-key-periodic_main_grid [data-testid="stHorizontalBlock"],
+        .st-key-periodic-main-grid [data-testid="stHorizontalBlock"] {
+            flex-wrap: nowrap;
+            min-width: 1188px;
+            gap: 4px;
+        }
+        .st-key-periodic_lanth_grid [data-testid="stHorizontalBlock"],
+        .st-key-periodic_act_grid [data-testid="stHorizontalBlock"],
+        .st-key-periodic-lanth-grid [data-testid="stHorizontalBlock"],
+        .st-key-periodic-act-grid [data-testid="stHorizontalBlock"] {
+            flex-wrap: nowrap;
+            min-width: 1015px;
+            gap: 4px;
+        }
+        .st-key-periodic_main_grid [data-testid="column"],
+        .st-key-periodic-main-grid [data-testid="column"],
+        .st-key-periodic_lanth_grid [data-testid="column"],
+        .st-key-periodic_act_grid [data-testid="column"],
+        .st-key-periodic-lanth-grid [data-testid="column"],
+        .st-key-periodic-act-grid [data-testid="column"],
+        .st-key-periodic_main_grid [data-testid="stColumn"],
+        .st-key-periodic-main-grid [data-testid="stColumn"],
+        .st-key-periodic_lanth_grid [data-testid="stColumn"],
+        .st-key-periodic_act_grid [data-testid="stColumn"],
+        .st-key-periodic-lanth-grid [data-testid="stColumn"],
+        .st-key-periodic-act-grid [data-testid="stColumn"] {
+            flex: 0 0 62px;
+            min-width: 62px;
+            width: 62px;
+        }
+        .st-key-periodic_main_grid [data-testid="stButton"] > button,
+        .st-key-periodic_lanth_grid [data-testid="stButton"] > button,
+        .st-key-periodic_act_grid [data-testid="stButton"] > button,
+        .st-key-periodic-main-grid [data-testid="stButton"] > button,
+        .st-key-periodic-lanth-grid [data-testid="stButton"] > button,
+        .st-key-periodic-act-grid [data-testid="stButton"] > button {
+            min-height: 92px;
+            height: 92px;
+            padding: 5px 3px;
+            border-radius: 7px;
+        }
+        .st-key-periodic_main_grid [data-testid="stButton"] > button p,
+        .st-key-periodic_lanth_grid [data-testid="stButton"] > button p,
+        .st-key-periodic_act_grid [data-testid="stButton"] > button p,
+        .st-key-periodic-main-grid [data-testid="stButton"] > button p,
+        .st-key-periodic-lanth-grid [data-testid="stButton"] > button p,
+        .st-key-periodic-act-grid [data-testid="stButton"] > button p {
+            font-size: 0.62rem;
+            line-height: 1.08;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+        }
+        .st-key-periodic_main_grid [data-testid="stButton"] > button p::first-line,
+        .st-key-periodic_lanth_grid [data-testid="stButton"] > button p::first-line,
+        .st-key-periodic_act_grid [data-testid="stButton"] > button p::first-line,
+        .st-key-periodic-main-grid [data-testid="stButton"] > button p::first-line,
+        .st-key-periodic-lanth-grid [data-testid="stButton"] > button p::first-line,
+        .st-key-periodic-act-grid [data-testid="stButton"] > button p::first-line {
+            font-size: 0.72rem;
+        }
+        .periodic-empty-button {
+            min-height: 92px;
+        }
+        .table-header {
+            font-size: 11px;
+            min-height: 16px;
+        }
         .periodic-grid {
             --cell-min: 66px;
             gap: 5px;

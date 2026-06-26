@@ -549,6 +549,68 @@ def render_series_button_grid(elementos, key_prefix):
             render_element_button(elem, key_prefix)
 
 
+def render_video_button_css():
+    rules = []
+    key_prefixes = ("periodic_main", "periodic_lanth", "periodic_act")
+    elements_with_videos = [z for z, videos in st.session_state.videos.items() if videos]
+
+    for z in elements_with_videos:
+        selectors = ",\n".join(
+            selector
+            for key_prefix in key_prefixes
+            for selector in (
+                f".st-key-{key_prefix}_{z} button",
+                f".st-key-{key_prefix.replace('_', '-')}-{z} button",
+            )
+        )
+        text_selectors = ",\n".join(f"{selector} p" for selector in selectors.split(",\n"))
+        rules.append(
+            f"""
+            {selectors} {{
+                background: linear-gradient(145deg, #dffcf4 0%, #9eead9 100%) !important;
+                border-color: #14b8a6 !important;
+                color: #064e3b !important;
+                box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.22), 0 8px 18px rgba(15, 118, 110, 0.16) !important;
+            }}
+            {text_selectors} {{
+                color: #064e3b !important;
+                font-weight: 800;
+            }}
+            """
+        )
+
+    return "\n".join(rules)
+
+
+def render_selected_button_css():
+    if "elemento_video_z" not in st.session_state:
+        return ""
+
+    z = st.session_state.elemento_video_z
+    key_prefixes = ("periodic_main", "periodic_lanth", "periodic_act")
+    selectors = ",\n".join(
+        selector
+        for key_prefix in key_prefixes
+        for selector in (
+            f".st-key-{key_prefix}_{z} button",
+            f".st-key-{key_prefix.replace('_', '-')}-{z} button",
+        )
+    )
+    text_selectors = ",\n".join(f"{selector} p" for selector in selectors.split(",\n"))
+
+    return f"""
+    {selectors} {{
+        background: #e53935 !important;
+        border-color: #c62828 !important;
+        color: #ffffff !important;
+        box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.24), 0 8px 18px rgba(198, 40, 40, 0.22) !important;
+    }}
+    {text_selectors} {{
+        color: #ffffff !important;
+    }}
+    """
+
+
 st.markdown(
     """
     <style>
@@ -759,46 +821,6 @@ st.markdown(
         white-space: nowrap;
         width: 100%;
     }
-    .legend-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
-        gap: 10px;
-        margin-top: 0.5rem;
-    }
-    .categoria-badge {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        min-height: 46px;
-        padding: 10px 13px;
-        border-radius: 8px;
-        border: 1px solid rgba(17, 24, 39, 0.12);
-        background: rgba(255, 255, 255, 0.72);
-        box-shadow:
-            0 0 0 1px rgba(var(--cat-rgb), 0.26),
-            0 0 22px rgba(var(--cat-rgb), 0.32),
-            0 8px 18px rgba(15, 23, 42, 0.07);
-        color: #111827;
-        font-size: 14px;
-        font-weight: 800;
-        line-height: 1.15;
-        transition: transform 0.18s ease, box-shadow 0.18s ease;
-    }
-    .categoria-badge:hover {
-        transform: translateY(-2px);
-        box-shadow:
-            0 0 0 2px rgba(var(--cat-rgb), 0.42),
-            0 0 30px rgba(var(--cat-rgb), 0.48),
-            0 12px 24px rgba(15, 23, 42, 0.10);
-    }
-    .categoria-swatch {
-        width: 24px;
-        height: 24px;
-        flex: 0 0 24px;
-        border-radius: 7px;
-        border: 1px solid rgba(17, 24, 39, 0.18);
-        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
-    }
     .table-header { font-weight: 700; color: #222; text-align: center; min-height: 20px; }
     .small-note { font-size: 13px; color: #555; }
     .video-box { border: 1px solid #e3e3e3; border-radius: 14px; padding: 16px; background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.04); }
@@ -827,6 +849,9 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+st.markdown(f"<style>{render_video_button_css()}</style>", unsafe_allow_html=True)
+st.markdown(f"<style>{render_selected_button_css()}</style>", unsafe_allow_html=True)
 
 st.title("⚛️ Tabela Periódica Interativa")
 st.markdown("Uma tabela periódica completa com marcação por elemento e agregador de vídeos sem barra lateral.")
@@ -879,20 +904,6 @@ with controls_col:
         if st.button(acao_label, use_container_width=True):
             toggle_elemento(elemento_para_marcar["z"])
             st.rerun()
-
-    st.markdown("---")
-    st.subheader("🎨 Legenda de Categorias")
-    legenda_html = "<div class='legend-grid'>"
-    for categoria, cor in CORES_CATEGORIA.items():
-        rgb = hex_to_rgb(cor)
-        legenda_html += (
-            f"<div class='categoria-badge' style='--cat-rgb:{rgb};'>"
-            f"<span class='categoria-swatch' style='background:{cor};'></span>"
-            f"<span>{html.escape(categoria)}</span>"
-            "</div>"
-        )
-    legenda_html += "</div>"
-    st.markdown(legenda_html, unsafe_allow_html=True)
 
 with videos_col:
     st.markdown("<div id='videos'></div>", unsafe_allow_html=True)

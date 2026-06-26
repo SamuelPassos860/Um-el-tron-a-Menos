@@ -375,6 +375,10 @@ def selecionar_elemento_video(z):
     st.query_params["elemento_video"] = str(z)
 
 
+def elemento_tem_videos(z):
+    return bool(st.session_state.videos.get(z))
+
+
 def render_element_card(elem):
     marcado = elem["z"] in st.session_state.elementos_falados
     cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
@@ -396,16 +400,12 @@ def render_element_card(elem):
     )
 
     return (
-        f"<div class='periodic-card{marcado_class}' style='{card_style}' title='{title}'>"
+        f"<a class='periodic-card{marcado_class}' href='?elemento_video={elem['z']}' style='{card_style}' title='{title}'>"
         f"<span class='periodic-glow-strip' style='background:{brilho_forte}; box-shadow:0 0 18px {brilho_forte};'></span>"
-        "<div class='periodic-info'>"
-        f"<span class='periodic-atomic'>{elem['z']}</span>"
-        f"<span class='periodic-mass'>{MASSAS_ATOMICAS.get(elem['z'], '')}</span>"
-        "</div>"
+        f"<div class='periodic-atomic'>{elem['z']}</div>"
         f"<div class='periodic-symbol'>{html.escape(elem['símbolo'])}</div>"
         f"<div class='periodic-name'>{html.escape(elem['nome'])}</div>"
-        f"<div class='periodic-category'>{html.escape(elem['categoria'])}</div>"
-        "</div>"
+        "</a>"
     )
 
 
@@ -464,6 +464,7 @@ def render_video_shortcut_buttons(rows, columns, lookup, key_prefix):
                     continue
 
                 marcado = elem["z"] in st.session_state.elementos_falados
+                tem_videos = elemento_tem_videos(elem["z"])
                 is_selected = elem["z"] == st.session_state.elemento_video_z
                 if st.button(
                     elem["símbolo"],
@@ -475,7 +476,7 @@ def render_video_shortcut_buttons(rows, columns, lookup, key_prefix):
                     ),
                     use_container_width=True,
                     type="primary" if is_selected else "secondary",
-                    disabled=not marcado,
+                    disabled=not (marcado or tem_videos),
                 ):
                     selecionar_elemento_video(elem["z"])
                     st.rerun()
@@ -486,6 +487,7 @@ def render_series_video_shortcuts(elementos, key_prefix):
     for index, elem in enumerate(elementos):
         with cols[index]:
             marcado = elem["z"] in st.session_state.elementos_falados
+            tem_videos = elemento_tem_videos(elem["z"])
             is_selected = elem["z"] == st.session_state.elemento_video_z
             if st.button(
                 elem["símbolo"],
@@ -497,18 +499,64 @@ def render_series_video_shortcuts(elementos, key_prefix):
                 ),
                 use_container_width=True,
                 type="primary" if is_selected else "secondary",
-                disabled=not marcado,
+                disabled=not (marcado or tem_videos),
             ):
                 selecionar_elemento_video(elem["z"])
                 st.rerun()
+
+
+def formatar_botao_elemento(elem):
+    return f"{elem['z']}  \n{elem['símbolo']}  \n{elem['nome']}"
+
+
+def render_element_button(elem, key_prefix):
+    marcado = elem["z"] in st.session_state.elementos_falados
+    is_selected = elem["z"] == st.session_state.elemento_video_z
+    status = "Marcado" if marcado else "Nao marcado"
+    help_text = f"{elem['nome']} - {status}."
+
+    if st.button(
+        formatar_botao_elemento(elem),
+        key=f"{key_prefix}_{elem['z']}",
+        help=help_text,
+        use_container_width=True,
+        type="primary" if is_selected else "secondary",
+    ):
+        selecionar_elemento_video(elem["z"])
+        st.rerun()
+
+
+def render_periodic_button_grid(rows, columns, lookup, key_prefix):
+    header_cols = st.columns(columns, gap="small")
+    for index, col in enumerate(header_cols, start=1):
+        col.markdown(f"<div class='table-header'>{index}</div>", unsafe_allow_html=True)
+
+    for row in rows:
+        cols = st.columns(columns, gap="small")
+        for column in range(1, columns + 1):
+            elem = lookup.get((row, column))
+            with cols[column - 1]:
+                if elem is None:
+                    st.markdown("<div class='periodic-empty-button'></div>", unsafe_allow_html=True)
+                else:
+                    render_element_button(elem, key_prefix)
+
+
+def render_series_button_grid(elementos, key_prefix):
+    cols = st.columns(len(elementos), gap="small")
+    for index, elem in enumerate(elementos):
+        with cols[index]:
+            render_element_button(elem, key_prefix)
 
 
 st.markdown(
     """
     <style>
     .block-container {
-        max-width: 1500px;
+        max-width: 1800px;
         padding-top: 2rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
     }
     .periodic-table-shell {
         width: 100%;
@@ -546,13 +594,14 @@ st.markdown(
             inset 0 0 18px rgba(var(--cat-rgb), 0.42),
             inset 0 1px 0 rgba(255,255,255,0.72);
         display: grid;
-        grid-template-rows: 13px 31px 16px 20px;
+        grid-template-rows: 16px 36px 18px;
         align-items: center;
         gap: 3px;
         overflow: hidden;
         position: relative;
         color: inherit;
         text-decoration: none;
+        cursor: pointer;
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
     }
     .periodic-card:visited,
@@ -591,10 +640,9 @@ st.markdown(
         pointer-events: none;
         z-index: 1;
     }
-    .periodic-info,
     .periodic-symbol,
     .periodic-name,
-    .periodic-category {
+    .periodic-atomic {
         position: relative;
         z-index: 2;
     }
@@ -611,8 +659,7 @@ st.markdown(
     .periodic-card.is-marked {
         opacity: 0.58;
     }
-    .periodic-card.is-marked .periodic-name,
-    .periodic-card.is-marked .periodic-category {
+    .periodic-card.is-marked .periodic-name {
         text-decoration: line-through;
     }
     .periodic-empty {
@@ -620,6 +667,70 @@ st.markdown(
         border: 1px dashed rgba(15, 23, 42, 0.08);
         border-radius: 8px;
         background: rgba(255,255,255,0.24);
+    }
+    .periodic-empty-button {
+        min-height: 92px;
+    }
+    .st-key-periodic_main_grid,
+    .st-key-periodic-main-grid {
+        zoom: 0.78;
+        transform-origin: top left;
+    }
+    .st-key-periodic_lanth_grid,
+    .st-key-periodic_act_grid,
+    .st-key-periodic-lanth-grid,
+    .st-key-periodic-act-grid {
+        zoom: 0.86;
+        transform-origin: top left;
+    }
+    .st-key-periodic_main_grid [data-testid="stButton"] > button,
+    .st-key-periodic_lanth_grid [data-testid="stButton"] > button,
+    .st-key-periodic_act_grid [data-testid="stButton"] > button,
+    .st-key-periodic-main-grid [data-testid="stButton"] > button,
+    .st-key-periodic-lanth-grid [data-testid="stButton"] > button,
+    .st-key-periodic-act-grid [data-testid="stButton"] > button {
+        min-height: 108px;
+        height: 108px;
+        padding: 7px 5px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        white-space: pre-line;
+        line-height: 1.12;
+        overflow: hidden;
+    }
+    .st-key-periodic_main_grid [data-testid="stButton"] > button *,
+    .st-key-periodic_lanth_grid [data-testid="stButton"] > button *,
+    .st-key-periodic_act_grid [data-testid="stButton"] > button *,
+    .st-key-periodic-main-grid [data-testid="stButton"] > button *,
+    .st-key-periodic-lanth-grid [data-testid="stButton"] > button *,
+    .st-key-periodic-act-grid [data-testid="stButton"] > button * {
+        white-space: pre-line;
+    }
+    .st-key-periodic_main_grid [data-testid="stButton"] > button p,
+    .st-key-periodic_lanth_grid [data-testid="stButton"] > button p,
+    .st-key-periodic_act_grid [data-testid="stButton"] > button p,
+    .st-key-periodic-main-grid [data-testid="stButton"] > button p,
+    .st-key-periodic-lanth-grid [data-testid="stButton"] > button p,
+    .st-key-periodic-act-grid [data-testid="stButton"] > button p {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: pre-line;
+        width: 100%;
+        margin: 0;
+        font-size: 0.72rem;
+        line-height: 1.12;
+        text-align: center;
+    }
+    .st-key-periodic_main_grid [data-testid="stButton"] > button p::first-line,
+    .st-key-periodic_lanth_grid [data-testid="stButton"] > button p::first-line,
+    .st-key-periodic_act_grid [data-testid="stButton"] > button p::first-line,
+    .st-key-periodic-main-grid [data-testid="stButton"] > button p::first-line,
+    .st-key-periodic-lanth-grid [data-testid="stButton"] > button p::first-line,
+    .st-key-periodic-act-grid [data-testid="stButton"] > button p::first-line {
+        font-size: 0.82rem;
+        font-weight: 800;
     }
     .periodic-symbol {
         color: #111827;
@@ -631,15 +742,11 @@ st.markdown(
     }
     .periodic-atomic {
         color: #111827;
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 800;
         line-height: 1;
-    }
-    .periodic-mass {
-        color: rgba(17, 24, 39, 0.68);
-        font-size: 10px;
         font-variant-numeric: tabular-nums;
-        line-height: 1;
+        text-align: center;
     }
     .periodic-name {
         color: #111827;
@@ -652,21 +759,6 @@ st.markdown(
         white-space: nowrap;
         width: 100%;
     }
-    .periodic-category {
-        color: rgba(17, 24, 39, 0.72);
-        font-size: 8.5px;
-        font-weight: 700;
-        line-height: 1.1;
-        text-align: center;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        display: -webkit-box;
-        -webkit-line-clamp: 2;
-        -webkit-box-orient: vertical;
-        white-space: normal;
-        width: 100%;
-    }
-    .periodic-info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
     .legend-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
@@ -721,7 +813,7 @@ st.markdown(
             min-height: 86px;
         }
         .periodic-card {
-            grid-template-rows: 12px 29px 15px 19px;
+            grid-template-rows: 14px 33px 17px;
             padding: 6px 5px;
         }
         .periodic-symbol {
@@ -729,9 +821,6 @@ st.markdown(
         }
         .periodic-name {
             font-size: 9.5px;
-        }
-        .periodic-category {
-            font-size: 8px;
         }
     }
     </style>
@@ -822,6 +911,7 @@ with videos_col:
         "Buscar elemento:",
         options=elementos_ordenados,
         index=selected_index,
+        key=f"elemento_video_select_{st.session_state.elemento_video_z}",
         format_func=lambda e: f"{e['símbolo']} - {e['nome']}",
     )
     if st.session_state.elemento_video_z != elemento_selecionado["z"]:
@@ -868,20 +958,20 @@ with videos_col:
 st.markdown("---")
 st.subheader("📊 Tabela Periódica Completa")
 
-st.markdown(render_periodic_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO), unsafe_allow_html=True)
-st.caption("Clique no botão de um elemento marcado para mudar a busca e mostrar o vídeo no agregador.")
-render_video_shortcut_buttons(range(1, 8), 18, ELEMENTOS_POR_POSICAO, "video_main")
+with st.container(key="periodic_main_grid"):
+    render_periodic_button_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO, "periodic_main")
+st.caption("Clique em um elemento da tabela para mudar a busca e mostrar os vídeos no agregador.")
 
 st.markdown("---")
 if LANTANIDEOS:
     st.subheader("🎓 Lantanídeos")
-    st.markdown(render_series_grid(LANTANIDEOS), unsafe_allow_html=True)
-    render_series_video_shortcuts(LANTANIDEOS, "video_lanth")
+    with st.container(key="periodic_lanth_grid"):
+        render_series_button_grid(LANTANIDEOS, "periodic_lanth")
 
 if ACTINIDEOS:
     st.subheader("🎓 Actinídeos")
-    st.markdown(render_series_grid(ACTINIDEOS), unsafe_allow_html=True)
-    render_series_video_shortcuts(ACTINIDEOS, "video_act")
+    with st.container(key="periodic_act_grid"):
+        render_series_button_grid(ACTINIDEOS, "periodic_act")
 
 st.markdown("---")
 st.markdown(

@@ -277,6 +277,7 @@ ELEMENTOS_POR_POSICAO = {
 LANTANIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Lantanídeo"]
 ACTINIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Actinídeo"]
 DATA_FILE = Path("dados_tabela.json")
+DEFAULT_ADMIN_PASSWORD = "admin"
 
 
 def load_app_data():
@@ -350,7 +351,7 @@ def get_admin_password():
         if password:
             return password
 
-    return ""
+    return DEFAULT_ADMIN_PASSWORD
 
 
 ADMIN_PASSWORD = get_admin_password()
@@ -620,6 +621,14 @@ st.markdown(
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    #MainMenu,
+    header,
+    footer,
+    [data-testid="stToolbar"],
+    [data-testid="stDecoration"],
+    [data-testid="stStatusWidget"] {
+        display: none !important;
+    }
     .periodic-table-shell {
         width: 100%;
         overflow-x: auto;
@@ -875,7 +884,7 @@ with controls_col:
                 st.rerun()
             else:
                 st.error("Senha incorreta.")
-        st.info("Visitantes podem visualizar a tabela e os links, mas não podem editar.")
+        st.info("Digite a senha para liberar edição e cadastro de vídeos.")
     else:
         st.warning("Defina ADMIN_PASSWORD para liberar edição com senha.")
 

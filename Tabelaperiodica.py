@@ -1,4 +1,5 @@
 import hmac
+import html
 import json
 import os
 import streamlit as st
@@ -310,14 +311,46 @@ if "videos" not in st.session_state:
 if "admin_autenticado" not in st.session_state:
     st.session_state.admin_autenticado = False
 
+if "elemento_video_z" not in st.session_state:
+    st.session_state.elemento_video_z = 1
+
+query_elemento_video = st.query_params.get("elemento_video")
+if query_elemento_video:
+    try:
+        elemento_video_z = int(query_elemento_video)
+    except ValueError:
+        elemento_video_z = st.session_state.elemento_video_z
+
+    if elemento_video_z in {elem["z"] for elem in ELEMENTOS}:
+        st.session_state.elemento_video_z = elemento_video_z
+
+
+def clean_secret(value):
+    if value is None:
+        return ""
+    return str(value).strip()
+
 
 def get_admin_password():
-    try:
-        senha_secrets = st.secrets.get("ADMIN_PASSWORD", "")
-    except Exception:
-        senha_secrets = ""
+    candidates = [os.getenv("ADMIN_PASSWORD"), os.getenv("admin_password")]
 
-    return os.getenv("ADMIN_PASSWORD") or senha_secrets
+    try:
+        candidates.append(st.secrets.get("ADMIN_PASSWORD", ""))
+        candidates.append(st.secrets.get("admin_password", ""))
+
+        admin_section = st.secrets.get("admin", {})
+        if hasattr(admin_section, "get"):
+            candidates.append(admin_section.get("password", ""))
+            candidates.append(admin_section.get("ADMIN_PASSWORD", ""))
+    except Exception:
+        pass
+
+    for candidate in candidates:
+        password = clean_secret(candidate)
+        if password:
+            return password
+
+    return ""
 
 
 ADMIN_PASSWORD = get_admin_password()
@@ -336,46 +369,261 @@ def toggle_elemento(z):
         st.session_state.elementos_falados.add(z)
     save_app_data()
 
+
+def selecionar_elemento_video(z):
+    st.session_state.elemento_video_z = z
+    st.query_params["elemento_video"] = str(z)
+
+
+def render_element_card(elem):
+    marcado = elem["z"] in st.session_state.elementos_falados
+    cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
+    rgb = hex_to_rgb(cor)
+    brilho_forte = f"rgba({rgb}, 0.72)"
+    brilho_medio = f"rgba({rgb}, 0.48)"
+    brilho_suave = f"rgba({rgb}, 0.26)"
+    marcado_class = " is-marked" if marcado else ""
+    title = html.escape(
+        f"{elem['z']} - {elem['nome']} ({elem['símbolo']}) | {elem['categoria']} | Massa {MASSAS_ATOMICAS.get(elem['z'], '')}"
+    )
+    card_style = (
+        f"--cat-color:{cor}; --cat-rgb:{rgb}; "
+        f"border-color:{brilho_forte}; "
+        f"background:radial-gradient(circle at 50% 18%, {brilho_medio} 0%, {brilho_suave} 38%, rgba(255,255,255,0) 74%), "
+        "linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.24) 46%, rgba(255,255,255,0.05) 100%), "
+        f"{cor}; "
+        f"box-shadow:0 0 0 2px {brilho_forte}, 0 0 26px {brilho_medio}, 0 10px 24px rgba(15, 23, 42, 0.10), inset 0 0 22px {brilho_suave}, inset 0 1px 0 rgba(255,255,255,0.72);"
+    )
+
+    return (
+        f"<div class='periodic-card{marcado_class}' style='{card_style}' title='{title}'>"
+        f"<span class='periodic-glow-strip' style='background:{brilho_forte}; box-shadow:0 0 18px {brilho_forte};'></span>"
+        "<div class='periodic-info'>"
+        f"<span class='periodic-atomic'>{elem['z']}</span>"
+        f"<span class='periodic-mass'>{MASSAS_ATOMICAS.get(elem['z'], '')}</span>"
+        "</div>"
+        f"<div class='periodic-symbol'>{html.escape(elem['símbolo'])}</div>"
+        f"<div class='periodic-name'>{html.escape(elem['nome'])}</div>"
+        f"<div class='periodic-category'>{html.escape(elem['categoria'])}</div>"
+        "</div>"
+    )
+
+
+def hex_to_rgb(hex_color):
+    hex_color = hex_color.lstrip("#")
+    if len(hex_color) != 6:
+        return "242, 242, 242"
+
+    try:
+        return ", ".join(str(int(hex_color[index:index + 2], 16)) for index in (0, 2, 4))
+    except ValueError:
+        return "242, 242, 242"
+
+
+def render_periodic_grid(rows, columns, lookup):
+    cells = []
+    for header in range(1, columns + 1):
+        cells.append(f"<div class='table-header'>{header}</div>")
+
+    for row in rows:
+        for column in range(1, columns + 1):
+            elem = lookup.get((row, column))
+            if elem is None:
+                cells.append("<div class='periodic-empty'></div>")
+            else:
+                cells.append(render_element_card(elem))
+
+    return (
+        "<div class='periodic-table-shell'>"
+        f"<div class='periodic-grid' style='--columns:{columns};'>"
+        f"{''.join(cells)}"
+        "</div>"
+        "</div>"
+    )
+
+
+def render_series_grid(elementos):
+    cells = [render_element_card(elem) for elem in elementos]
+    return (
+        "<div class='periodic-table-shell'>"
+        f"<div class='periodic-grid series-grid' style='--columns:{len(elementos)};'>"
+        f"{''.join(cells)}"
+        "</div>"
+        "</div>"
+    )
+
+
+def render_video_shortcut_buttons(rows, columns, lookup, key_prefix):
+    for row in rows:
+        cols = st.columns(columns, gap="small")
+        for column in range(1, columns + 1):
+            elem = lookup.get((row, column))
+            with cols[column - 1]:
+                if elem is None:
+                    st.markdown("<div style='height:38px;'></div>", unsafe_allow_html=True)
+                    continue
+
+                marcado = elem["z"] in st.session_state.elementos_falados
+                is_selected = elem["z"] == st.session_state.elemento_video_z
+                if st.button(
+                    elem["símbolo"],
+                    key=f"{key_prefix}_{elem['z']}",
+                    help=(
+                        f"Mostrar vídeos de {elem['nome']}"
+                        if marcado
+                        else f"Marque {elem['nome']} para liberar o vídeo"
+                    ),
+                    use_container_width=True,
+                    type="primary" if is_selected else "secondary",
+                    disabled=not marcado,
+                ):
+                    selecionar_elemento_video(elem["z"])
+                    st.rerun()
+
+
+def render_series_video_shortcuts(elementos, key_prefix):
+    cols = st.columns(len(elementos), gap="small")
+    for index, elem in enumerate(elementos):
+        with cols[index]:
+            marcado = elem["z"] in st.session_state.elementos_falados
+            is_selected = elem["z"] == st.session_state.elemento_video_z
+            if st.button(
+                elem["símbolo"],
+                key=f"{key_prefix}_{elem['z']}",
+                help=(
+                    f"Mostrar vídeos de {elem['nome']}"
+                    if marcado
+                    else f"Marque {elem['nome']} para liberar o vídeo"
+                ),
+                use_container_width=True,
+                type="primary" if is_selected else "secondary",
+                disabled=not marcado,
+            ):
+                selecionar_elemento_video(elem["z"])
+                st.rerun()
+
+
 st.markdown(
     """
     <style>
+    .block-container {
+        max-width: 1500px;
+        padding-top: 2rem;
+    }
+    .periodic-table-shell {
+        width: 100%;
+        overflow-x: auto;
+        padding: 4px 2px 14px;
+    }
+    .periodic-grid {
+        --cell-min: 72px;
+        display: grid;
+        grid-template-columns: repeat(var(--columns), minmax(var(--cell-min), 1fr));
+        gap: 6px;
+        min-width: calc(var(--columns) * var(--cell-min) + (var(--columns) - 1) * 6px);
+        align-items: stretch;
+    }
+    .series-grid {
+        --cell-min: 76px;
+    }
     .periodic-card {
         --cat-color: #f2f2f2;
         box-sizing: border-box;
         width: 100%;
-        aspect-ratio: 1 / 1;
-        min-height: 0;
-        padding: 8px;
+        min-height: 92px;
+        height: 100%;
+        padding: 7px 6px;
         border: 1px solid rgba(17, 24, 39, 0.14);
         border-radius: 8px;
         background:
+            radial-gradient(circle at 50% 18%, rgba(var(--cat-rgb), 0.52) 0%, rgba(var(--cat-rgb), 0.24) 36%, rgba(var(--cat-rgb), 0) 72%),
             linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.24) 46%, rgba(255,255,255,0.05) 100%),
             var(--cat-color);
-        box-shadow: 0 10px 24px rgba(15, 23, 42, 0.10), inset 0 1px 0 rgba(255,255,255,0.72);
+        box-shadow:
+            0 0 0 2px rgba(var(--cat-rgb), 0.52),
+            0 0 20px rgba(var(--cat-rgb), 0.48),
+            0 10px 24px rgba(15, 23, 42, 0.10),
+            inset 0 0 18px rgba(var(--cat-rgb), 0.42),
+            inset 0 1px 0 rgba(255,255,255,0.72);
         display: grid;
-        grid-template-rows: auto 1fr auto auto;
+        grid-template-rows: 13px 31px 16px 20px;
         align-items: center;
-        gap: 2px;
+        gap: 3px;
         overflow: hidden;
         position: relative;
+        color: inherit;
+        text-decoration: none;
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+    }
+    .periodic-card:visited,
+    .periodic-card:hover,
+    .periodic-card:active {
+        color: inherit;
+        text-decoration: none;
     }
     .periodic-card::after {
         content: "";
         position: absolute;
         inset: 0;
         pointer-events: none;
-        background: linear-gradient(120deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 42%);
+        border-radius: inherit;
+        background:
+            linear-gradient(120deg, rgba(255,255,255,0.42), rgba(255,255,255,0) 42%),
+            linear-gradient(180deg, rgba(var(--cat-rgb), 0.28), rgba(var(--cat-rgb), 0) 58%);
+    }
+    .periodic-card::before {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        pointer-events: none;
+        border-radius: 6px;
+        border: 1px solid rgba(var(--cat-rgb), 0.58);
+        box-shadow: inset 0 0 14px rgba(var(--cat-rgb), 0.42);
+    }
+    .periodic-glow-strip {
+        position: absolute;
+        top: 5px;
+        left: 7px;
+        right: 7px;
+        height: 4px;
+        border-radius: 999px;
+        opacity: 0.9;
+        pointer-events: none;
+        z-index: 1;
+    }
+    .periodic-info,
+    .periodic-symbol,
+    .periodic-name,
+    .periodic-category {
+        position: relative;
+        z-index: 2;
     }
     .periodic-card:hover {
         transform: translateY(-3px);
         border-color: rgba(17, 24, 39, 0.24);
-        box-shadow: 0 16px 34px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255,255,255,0.8);
+        box-shadow:
+            0 0 0 3px rgba(var(--cat-rgb), 0.72),
+            0 0 32px rgba(var(--cat-rgb), 0.68),
+            0 16px 34px rgba(15, 23, 42, 0.16),
+            inset 0 0 22px rgba(var(--cat-rgb), 0.54),
+            inset 0 1px 0 rgba(255,255,255,0.8);
     }
-    .periodic-cell { min-height: 0; }
+    .periodic-card.is-marked {
+        opacity: 0.58;
+    }
+    .periodic-card.is-marked .periodic-name,
+    .periodic-card.is-marked .periodic-category {
+        text-decoration: line-through;
+    }
+    .periodic-empty {
+        min-height: 92px;
+        border: 1px dashed rgba(15, 23, 42, 0.08);
+        border-radius: 8px;
+        background: rgba(255,255,255,0.24);
+    }
     .periodic-symbol {
         color: #111827;
-        font-size: 26px;
+        font-size: 25px;
         font-weight: 900;
         line-height: 1;
         text-align: center;
@@ -395,7 +643,7 @@ st.markdown(
     }
     .periodic-name {
         color: #111827;
-        font-size: 11px;
+        font-size: 10px;
         font-weight: 800;
         line-height: 1.1;
         text-align: center;
@@ -406,21 +654,86 @@ st.markdown(
     }
     .periodic-category {
         color: rgba(17, 24, 39, 0.72);
-        font-size: 9px;
+        font-size: 8.5px;
         font-weight: 700;
         line-height: 1.1;
         text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
-        white-space: nowrap;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        white-space: normal;
         width: 100%;
     }
     .periodic-info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
-    .categoria-badge { display: inline-block; padding: 5px 12px; border-radius: 999px; font-size: 11px; margin: 3px 3px 3px 0; }
-    .table-header { font-weight: 700; color: #222; text-align: center; }
+    .legend-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 10px;
+        margin-top: 0.5rem;
+    }
+    .categoria-badge {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-height: 46px;
+        padding: 10px 13px;
+        border-radius: 8px;
+        border: 1px solid rgba(17, 24, 39, 0.12);
+        background: rgba(255, 255, 255, 0.72);
+        box-shadow:
+            0 0 0 1px rgba(var(--cat-rgb), 0.26),
+            0 0 22px rgba(var(--cat-rgb), 0.32),
+            0 8px 18px rgba(15, 23, 42, 0.07);
+        color: #111827;
+        font-size: 14px;
+        font-weight: 800;
+        line-height: 1.15;
+        transition: transform 0.18s ease, box-shadow 0.18s ease;
+    }
+    .categoria-badge:hover {
+        transform: translateY(-2px);
+        box-shadow:
+            0 0 0 2px rgba(var(--cat-rgb), 0.42),
+            0 0 30px rgba(var(--cat-rgb), 0.48),
+            0 12px 24px rgba(15, 23, 42, 0.10);
+    }
+    .categoria-swatch {
+        width: 24px;
+        height: 24px;
+        flex: 0 0 24px;
+        border-radius: 7px;
+        border: 1px solid rgba(17, 24, 39, 0.18);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+    }
+    .table-header { font-weight: 700; color: #222; text-align: center; min-height: 20px; }
     .small-note { font-size: 13px; color: #555; }
     .video-box { border: 1px solid #e3e3e3; border-radius: 14px; padding: 16px; background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.04); }
     .video-box h3 { margin-top: 0; }
+    @media (max-width: 900px) {
+        .periodic-grid {
+            --cell-min: 66px;
+            gap: 5px;
+        }
+        .periodic-card,
+        .periodic-empty {
+            min-height: 86px;
+        }
+        .periodic-card {
+            grid-template-rows: 12px 29px 15px 19px;
+            padding: 6px 5px;
+        }
+        .periodic-symbol {
+            font-size: 23px;
+        }
+        .periodic-name {
+            font-size: 9.5px;
+        }
+        .periodic-category {
+            font-size: 8px;
+        }
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -442,7 +755,7 @@ with controls_col:
     elif ADMIN_PASSWORD:
         senha_digitada = st.text_input("Senha de administrador", type="password")
         if st.button("Entrar como administrador"):
-            if hmac.compare_digest(senha_digitada, ADMIN_PASSWORD):
+            if hmac.compare_digest(clean_secret(senha_digitada), ADMIN_PASSWORD):
                 st.session_state.admin_autenticado = True
                 st.success("Acesso de edição liberado.")
                 st.rerun()
@@ -464,24 +777,57 @@ with controls_col:
         st.progress(estudados / total_elementos)
         st.caption(f"Progresso: {estudados / total_elementos * 100:.0f}%")
 
+    if IS_ADMIN:
+        st.markdown("---")
+        elemento_para_marcar = st.selectbox(
+            "Marcar ou desmarcar elemento:",
+            options=sorted(ELEMENTOS, key=lambda e: e["z"]),
+            format_func=lambda e: f"{e['z']} - {e['símbolo']} | {e['nome']}",
+            key="elemento_marcacao_input",
+        )
+        ja_marcado = elemento_para_marcar["z"] in st.session_state.elementos_falados
+        acao_label = "Desmarcar elemento" if ja_marcado else "Marcar elemento"
+        if st.button(acao_label, use_container_width=True):
+            toggle_elemento(elemento_para_marcar["z"])
+            st.rerun()
+
     st.markdown("---")
     st.subheader("🎨 Legenda de Categorias")
-    categoria_cols = st.columns([1, 1, 1])
-    idx = 0
+    legenda_html = "<div class='legend-grid'>"
     for categoria, cor in CORES_CATEGORIA.items():
-        with categoria_cols[idx % len(categoria_cols)]:
-            st.markdown(
-                f"<span class='categoria-badge' style='background:{cor}; color:#212121;'>{categoria}</span>",
-                unsafe_allow_html=True,
-            )
-        idx += 1
+        rgb = hex_to_rgb(cor)
+        legenda_html += (
+            f"<div class='categoria-badge' style='--cat-rgb:{rgb};'>"
+            f"<span class='categoria-swatch' style='background:{cor};'></span>"
+            f"<span>{html.escape(categoria)}</span>"
+            "</div>"
+        )
+    legenda_html += "</div>"
+    st.markdown(legenda_html, unsafe_allow_html=True)
 
 with videos_col:
+    st.markdown("<div id='videos'></div>", unsafe_allow_html=True)
     st.subheader("📹 Agregador de Vídeos")
+    elementos_ordenados = sorted(ELEMENTOS, key=lambda e: e["z"])
+    selected_index = next(
+        (
+            index
+            for index, elem in enumerate(elementos_ordenados)
+            if elem["z"] == st.session_state.elemento_video_z
+        ),
+        0,
+    )
+
     elemento_selecionado = st.selectbox(
-        "Selecione o elemento:",
-        options=sorted(ELEMENTOS, key=lambda e: e["z"]),
+        "Buscar elemento:",
+        options=elementos_ordenados,
+        index=selected_index,
         format_func=lambda e: f"{e['símbolo']} - {e['nome']}",
+    )
+    if st.session_state.elemento_video_z != elemento_selecionado["z"]:
+        selecionar_elemento_video(elemento_selecionado["z"])
+    st.caption(
+        f"Vídeos exibidos para {elemento_selecionado['símbolo']} - {elemento_selecionado['nome']}."
     )
     if IS_ADMIN:
         url_video = st.text_input("URL do vídeo", placeholder="https://www.youtube.com/watch?v=...", key="video_url_input")
@@ -502,99 +848,40 @@ with videos_col:
             else:
                 st.error("Preencha URL e descrição antes de adicionar.")
     else:
-        st.caption("Modo visualização: os links cadastrados ficam disponíveis para consulta.")
+        st.caption("Modo visualização: os vídeos cadastrados ficam disponíveis para assistir aqui.")
 
     st.markdown("---")
     st.subheader("📚 Vídeos por elemento")
     z = elemento_selecionado["z"]
     if z in st.session_state.videos and st.session_state.videos[z]:
         for idx, video in enumerate(st.session_state.videos[z]):
-            with st.expander(f"{video['descricao']}"):
-                st.markdown(f"🔗 [Abrir vídeo]({video['url']})")
-                st.caption(f"Adicionado em {video['data']}")
-                if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
-                    st.session_state.videos[z].pop(idx)
-                    save_app_data()
-                    st.rerun()
+            st.markdown(f"**{html.escape(video['descricao'])}**")
+            st.video(video["url"])
+            st.caption(f"Adicionado em {video['data']}")
+            if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
+                st.session_state.videos[z].pop(idx)
+                save_app_data()
+                st.rerun()
     else:
         st.info("Nenhum vídeo cadastrado para este elemento.")
 
 st.markdown("---")
 st.subheader("📊 Tabela Periódica Completa")
 
-group_headers = [f"{i}" for i in range(1, 19)]
-cols = st.columns(18, gap="small")
-for index, header in enumerate(group_headers):
-    with cols[index]:
-        st.markdown(f"<div class='table-header'>{header}</div>", unsafe_allow_html=True)
-
-for period in range(1, 8):
-    cols = st.columns(18, gap="small")
-    for group in range(1, 19):
-        elem = ELEMENTOS_POR_POSICAO.get((period, group))
-        with cols[group - 1]:
-            if elem is None:
-                st.markdown("<div style='aspect-ratio:1 / 1; width:100%;'></div>", unsafe_allow_html=True)
-                continue
-
-            marcado = elem["z"] in st.session_state.elementos_falados
-            cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
-            opacidade = "0.55" if marcado else "1"
-            decoracao = "line-through" if marcado else "none"
-            texto = f"<div class='periodic-card periodic-cell' style='--cat-color:{cor}; opacity:{opacidade};'>"
-            texto += f"<div class='periodic-info'><span class='periodic-atomic'>{elem['z']}</span><span class='periodic-mass'>{MASSAS_ATOMICAS.get(elem['z'], '')}</span></div>"
-            texto += f"<div><span class='periodic-symbol'>{elem['símbolo']}</span></div>"
-            texto += f"<div class='periodic-name'>{elem['nome']}</div>"
-            texto += f"<div class='periodic-category' style='text-decoration:{decoracao};'>{elem['categoria']}</div>"
-            texto += "</div>"
-            st.markdown(texto, unsafe_allow_html=True)
-            if IS_ADMIN:
-                label = "Desmarcar" if marcado else "Marcar"
-                if st.button(label, key=f"mark_{elem['z']}", on_click=toggle_elemento, args=(elem['z'],), use_container_width=True):
-                    pass
+st.markdown(render_periodic_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO), unsafe_allow_html=True)
+st.caption("Clique no botão de um elemento marcado para mudar a busca e mostrar o vídeo no agregador.")
+render_video_shortcut_buttons(range(1, 8), 18, ELEMENTOS_POR_POSICAO, "video_main")
 
 st.markdown("---")
 if LANTANIDEOS:
     st.subheader("🎓 Lantanídeos")
-    cols = st.columns(15, gap="small")
-    for index, elem in enumerate(LANTANIDEOS):
-        with cols[index]:
-            marcado = elem["z"] in st.session_state.elementos_falados
-            cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
-            opacidade = "0.55" if marcado else "1"
-            decoracao = "line-through" if marcado else "none"
-            texto = f"<div class='periodic-card periodic-cell' style='--cat-color:{cor}; opacity:{opacidade};'>"
-            texto += f"<div class='periodic-info'><span class='periodic-atomic'>{elem['z']}</span><span class='periodic-mass'>{MASSAS_ATOMICAS.get(elem['z'], '')}</span></div>"
-            texto += f"<div><span class='periodic-symbol'>{elem['símbolo']}</span></div>"
-            texto += f"<div class='periodic-name'>{elem['nome']}</div>"
-            texto += f"<div class='periodic-category' style='text-decoration:{decoracao};'>{elem['categoria']}</div>"
-            texto += "</div>"
-            st.markdown(texto, unsafe_allow_html=True)
-            if IS_ADMIN:
-                label = "Desmarcar" if marcado else "Marcar"
-                if st.button(label, key=f"lanth_{elem['z']}", on_click=toggle_elemento, args=(elem['z'],), use_container_width=True):
-                    pass
+    st.markdown(render_series_grid(LANTANIDEOS), unsafe_allow_html=True)
+    render_series_video_shortcuts(LANTANIDEOS, "video_lanth")
 
 if ACTINIDEOS:
     st.subheader("🎓 Actinídeos")
-    cols = st.columns(15, gap="small")
-    for index, elem in enumerate(ACTINIDEOS):
-        with cols[index]:
-            marcado = elem["z"] in st.session_state.elementos_falados
-            cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
-            opacidade = "0.55" if marcado else "1"
-            decoracao = "line-through" if marcado else "none"
-            texto = f"<div class='periodic-card periodic-cell' style='--cat-color:{cor}; opacity:{opacidade};'>"
-            texto += f"<div class='periodic-info'><span class='periodic-atomic'>{elem['z']}</span><span class='periodic-mass'>{MASSAS_ATOMICAS.get(elem['z'], '')}</span></div>"
-            texto += f"<div><span class='periodic-symbol'>{elem['símbolo']}</span></div>"
-            texto += f"<div class='periodic-name'>{elem['nome']}</div>"
-            texto += f"<div class='periodic-category' style='text-decoration:{decoracao};'>{elem['categoria']}</div>"
-            texto += "</div>"
-            st.markdown(texto, unsafe_allow_html=True)
-            if IS_ADMIN:
-                label = "Desmarcar" if marcado else "Marcar"
-                if st.button(label, key=f"act_{elem['z']}", on_click=toggle_elemento, args=(elem['z'],), use_container_width=True):
-                    pass
+    st.markdown(render_series_grid(ACTINIDEOS), unsafe_allow_html=True)
+    render_series_video_shortcuts(ACTINIDEOS, "video_act")
 
 st.markdown("---")
 st.markdown(

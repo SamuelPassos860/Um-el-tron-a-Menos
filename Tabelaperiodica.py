@@ -380,8 +380,24 @@ def elemento_tem_videos(z):
     return bool(st.session_state.videos.get(z))
 
 
+def elementos_contabilizados():
+    elementos_com_videos = {
+        int(z)
+        for z, videos in st.session_state.videos.items()
+        if videos
+    }
+    return set(st.session_state.elementos_falados) | elementos_com_videos
+
+
+def sincronizar_elementos_com_videos():
+    st.session_state.elementos_falados = elementos_contabilizados()
+
+
+sincronizar_elementos_com_videos()
+
+
 def render_element_card(elem):
-    marcado = elem["z"] in st.session_state.elementos_falados
+    marcado = elem["z"] in elementos_contabilizados()
     cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
     rgb = hex_to_rgb(cor)
     brilho_forte = f"rgba({rgb}, 0.72)"
@@ -511,7 +527,7 @@ def formatar_botao_elemento(elem):
 
 
 def render_element_button(elem, key_prefix):
-    marcado = elem["z"] in st.session_state.elementos_falados
+    marcado = elem["z"] in elementos_contabilizados()
     is_selected = elem["z"] == st.session_state.elemento_video_z
     status = "Marcado" if marcado else "Nao marcado"
     help_text = f"{elem['nome']} - {status}."
@@ -894,7 +910,7 @@ with controls_col:
         st.success("Progressão de estudo resetada!")
 
     total_elementos = len(ELEMENTOS)
-    estudados = len(st.session_state.elementos_falados)
+    estudados = len(elementos_contabilizados())
     st.metric("Elementos marcados", f"{estudados}/{total_elementos}")
     if total_elementos:
         st.progress(estudados / total_elementos)
@@ -953,6 +969,7 @@ with videos_col:
                         "data": datetime.now().strftime("%d/%m/%Y %H:%M"),
                     }
                 )
+                st.session_state.elementos_falados.add(z)
                 save_app_data()
                 st.success("Vídeo cadastrado com sucesso!")
             else:

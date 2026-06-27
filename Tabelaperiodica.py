@@ -277,6 +277,7 @@ ELEMENTOS_POR_POSICAO = {
 LANTANIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Lantanídeo"]
 ACTINIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Actinídeo"]
 DATA_FILE = Path("dados_tabela.json")
+LOGO_FILE = Path("assets/logo.png")
 DEFAULT_ADMIN_PASSWORD = "admin"
 
 
@@ -637,6 +638,17 @@ st.markdown(
         padding-left: 1rem;
         padding-right: 1rem;
     }
+    .stApp {
+        background:
+            linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
+        color: #111827;
+    }
+    [data-testid="stAppViewContainer"] {
+        background: transparent;
+    }
+    [data-testid="stHeader"] {
+        background: transparent;
+    }
     #MainMenu,
     header,
     footer,
@@ -644,6 +656,29 @@ st.markdown(
     [data-testid="stDecoration"],
     [data-testid="stStatusWidget"] {
         display: none !important;
+    }
+    .app-header [data-testid="stHorizontalBlock"] {
+        gap: 0;
+        align-items: center;
+    }
+    .app-header [data-testid="column"],
+    .app-header [data-testid="stColumn"] {
+        flex: 0 0 auto !important;
+        width: auto !important;
+        min-width: 0 !important;
+    }
+    .app-header h1 {
+        margin: 0;
+        line-height: 1.08;
+    }
+    .app-header img {
+        display: block;
+        width: 150px;
+        height: 150px;
+        object-fit: cover;
+        object-position: center;
+        border-radius: 50%;
+        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
     }
     .periodic-table-shell {
         width: 100%;
@@ -750,24 +785,30 @@ st.markdown(
         text-decoration: line-through;
     }
     .periodic-empty {
-        min-height: 92px;
+        min-height: 78px;
         border: 1px dashed rgba(15, 23, 42, 0.08);
-        border-radius: 8px;
+        border-radius: 7px;
         background: rgba(255,255,255,0.24);
     }
     .periodic-empty-button {
         min-height: 92px;
     }
+    [data-testid="stMetric"],
+    [data-testid="stAlert"],
+    [data-testid="stTextInput"],
+    [data-testid="stSelectbox"] {
+        border-radius: 8px;
+    }
     .st-key-periodic_main_grid,
     .st-key-periodic-main-grid {
-        zoom: 0.78;
+        zoom: 0.84;
         transform-origin: top left;
     }
     .st-key-periodic_lanth_grid,
     .st-key-periodic_act_grid,
     .st-key-periodic-lanth-grid,
     .st-key-periodic-act-grid {
-        zoom: 0.86;
+        zoom: 0.90;
         transform-origin: top left;
     }
     .st-key-periodic_main_grid [data-testid="stButton"] > button,
@@ -776,10 +817,10 @@ st.markdown(
     .st-key-periodic-main-grid [data-testid="stButton"] > button,
     .st-key-periodic-lanth-grid [data-testid="stButton"] > button,
     .st-key-periodic-act-grid [data-testid="stButton"] > button {
-        min-height: 108px;
-        height: 108px;
-        padding: 7px 5px;
-        border-radius: 8px;
+        min-height: 92px;
+        height: 92px;
+        padding: 4px 2px;
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -821,7 +862,7 @@ st.markdown(
     }
     .periodic-symbol {
         color: #111827;
-        font-size: 25px;
+        font-size: 22px;
         font-weight: 900;
         line-height: 1;
         text-align: center;
@@ -829,7 +870,7 @@ st.markdown(
     }
     .periodic-atomic {
         color: #111827;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 800;
         line-height: 1;
         font-variant-numeric: tabular-nums;
@@ -837,9 +878,9 @@ st.markdown(
     }
     .periodic-name {
         color: #111827;
-        font-size: 10px;
+        font-size: 9px;
         font-weight: 800;
-        line-height: 1.1;
+        line-height: 1.05;
         text-align: center;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -945,22 +986,22 @@ st.markdown(
             min-height: 16px;
         }
         .periodic-grid {
-            --cell-min: 66px;
-            gap: 5px;
+            --cell-min: 60px;
+            gap: 3px;
         }
         .periodic-card,
         .periodic-empty {
-            min-height: 86px;
+            min-height: 76px;
         }
         .periodic-card {
-            grid-template-rows: 14px 33px 17px;
-            padding: 6px 5px;
+            grid-template-rows: 10px 26px 13px;
+            padding: 3px 2px;
         }
         .periodic-symbol {
-            font-size: 23px;
+            font-size: 20px;
         }
         .periodic-name {
-            font-size: 9.5px;
+            font-size: 8.6px;
         }
     }
     </style>
@@ -971,8 +1012,14 @@ st.markdown(
 st.markdown(f"<style>{render_video_button_css()}</style>", unsafe_allow_html=True)
 st.markdown(f"<style>{render_selected_button_css()}</style>", unsafe_allow_html=True)
 
-st.title("⚛️ Tabela Periódica Interativa")
-st.markdown("Uma tabela periódica completa com marcação por elemento e agregador de vídeos sem barra lateral.")
+st.markdown("<div class='app-header'>", unsafe_allow_html=True)
+logo_col, title_col = st.columns([0.09, 0.91])
+with logo_col:
+    if LOGO_FILE.exists():
+        st.image(str(LOGO_FILE), width=150)
+with title_col:
+    st.title("Tabela Periódica Interativa")
+st.markdown("</div>", unsafe_allow_html=True)
 st.markdown("---")
 
 controls_col, videos_col = st.columns([1.1, 0.95], gap="large")

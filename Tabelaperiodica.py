@@ -639,17 +639,37 @@ st.markdown(
         padding-top: 2rem;
         padding-left: 1rem;
         padding-right: 1rem;
-    }
-    .stApp {
-        background:
-            linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%);
         color: #111827;
     }
+    html,
+    body,
+    .stApp {
+        color-scheme: light;
+        background:
+            linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%) !important;
+        color: #111827 !important;
+    }
     [data-testid="stAppViewContainer"] {
-        background: transparent;
+        background: transparent !important;
+        color: #111827 !important;
     }
     [data-testid="stHeader"] {
         background: transparent;
+    }
+    .stMarkdown,
+    .stMarkdown *,
+    [data-testid="stMarkdownContainer"],
+    [data-testid="stMarkdownContainer"] *,
+    [data-testid="stMetric"],
+    [data-testid="stMetric"] *,
+    [data-testid="stCaptionContainer"],
+    [data-testid="stCaptionContainer"] *,
+    label,
+    p,
+    h1,
+    h2,
+    h3 {
+        color: #111827;
     }
     #MainMenu,
     header,
@@ -819,6 +839,9 @@ st.markdown(
     .st-key-periodic-main-grid [data-testid="stButton"] > button,
     .st-key-periodic-lanth-grid [data-testid="stButton"] > button,
     .st-key-periodic-act-grid [data-testid="stButton"] > button {
+        background: linear-gradient(145deg, rgba(255,255,255,0.96) 0%, rgba(243,244,246,0.98) 100%) !important;
+        border: 1px solid rgba(17, 24, 39, 0.18) !important;
+        color: #111827 !important;
         min-height: 92px;
         height: 92px;
         padding: 4px 2px;
@@ -829,6 +852,17 @@ st.markdown(
         white-space: pre-line;
         line-height: 1.12;
         overflow: hidden;
+        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+    }
+    .st-key-periodic_main_grid [data-testid="stButton"] > button:hover,
+    .st-key-periodic_lanth_grid [data-testid="stButton"] > button:hover,
+    .st-key-periodic_act_grid [data-testid="stButton"] > button:hover,
+    .st-key-periodic-main-grid [data-testid="stButton"] > button:hover,
+    .st-key-periodic-lanth-grid [data-testid="stButton"] > button:hover,
+    .st-key-periodic-act-grid [data-testid="stButton"] > button:hover {
+        background: linear-gradient(145deg, #ffffff 0%, #e0f2fe 100%) !important;
+        border-color: #0284c7 !important;
+        color: #0f172a !important;
     }
     .st-key-periodic_main_grid [data-testid="stButton"] > button *,
     .st-key-periodic_lanth_grid [data-testid="stButton"] > button *,
@@ -849,6 +883,7 @@ st.markdown(
         white-space: pre-line;
         width: 100%;
         margin: 0;
+        color: #111827 !important;
         font-size: 0.72rem;
         line-height: 1.12;
         text-align: center;

@@ -325,6 +325,7 @@ if query_elemento_video:
 
     if elemento_video_z in {elem["z"] for elem in ELEMENTOS}:
         st.session_state.elemento_video_z = elemento_video_z
+        st.session_state.elemento_video_select_z = elemento_video_z
 
 
 def clean_secret(value):
@@ -375,6 +376,7 @@ def toggle_elemento(z):
 def selecionar_elemento_video(z):
     st.session_state.elemento_video_z = z
     st.query_params["elemento_video"] = str(z)
+    st.session_state.elemento_video_select_z = z
 
 
 def elemento_tem_videos(z):
@@ -1074,6 +1076,9 @@ with videos_col:
     st.markdown("<div id='videos'></div>", unsafe_allow_html=True)
     st.subheader("📹 Agregador de Vídeos")
     elementos_ordenados = sorted(ELEMENTOS, key=lambda e: e["z"])
+    elementos_por_z = {elem["z"]: elem for elem in elementos_ordenados}
+    if not isinstance(st.session_state.get("elemento_video_select_z"), int):
+        st.session_state.elemento_video_select_z = st.session_state.elemento_video_z
     selected_index = next(
         (
             index
@@ -1083,15 +1088,18 @@ with videos_col:
         0,
     )
 
-    elemento_selecionado = st.selectbox(
+    z_selecionado = st.selectbox(
         "Buscar elemento:",
-        options=elementos_ordenados,
+        options=[elem["z"] for elem in elementos_ordenados],
         index=selected_index,
-        key=f"elemento_video_select_{st.session_state.elemento_video_z}",
-        format_func=lambda e: f"{e['símbolo']} - {e['nome']}",
+        key="elemento_video_select_z",
+        format_func=lambda z: f"{elementos_por_z[z]['símbolo']} - {elementos_por_z[z]['nome']}",
     )
-    if st.session_state.elemento_video_z != elemento_selecionado["z"]:
-        selecionar_elemento_video(elemento_selecionado["z"])
+    if st.session_state.elemento_video_z != z_selecionado:
+        selecionar_elemento_video(z_selecionado)
+        st.rerun()
+
+    elemento_selecionado = elementos_por_z[st.session_state.elemento_video_z]
     st.caption(
         f"Vídeos exibidos para {elemento_selecionado['símbolo']} - {elemento_selecionado['nome']}."
     )
@@ -1120,17 +1128,18 @@ with videos_col:
     st.markdown("---")
     st.subheader("📚 Vídeos por elemento")
     z = elemento_selecionado["z"]
-    if z in st.session_state.videos and st.session_state.videos[z]:
-        for idx, video in enumerate(st.session_state.videos[z]):
-            st.markdown(f"**{html.escape(video['descricao'])}**")
-            st.video(video["url"])
-            st.caption(f"Adicionado em {video['data']}")
-            if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
-                st.session_state.videos[z].pop(idx)
-                save_app_data()
-                st.rerun()
-    else:
-        st.info("Nenhum vídeo cadastrado para este elemento.")
+    with st.container(key=f"videos_elemento_{z}"):
+        if z in st.session_state.videos and st.session_state.videos[z]:
+            for idx, video in enumerate(st.session_state.videos[z]):
+                st.markdown(f"**{html.escape(video['descricao'])}**")
+                st.video(video["url"])
+                st.caption(f"Adicionado em {video['data']}")
+                if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
+                    st.session_state.videos[z].pop(idx)
+                    save_app_data()
+                    st.rerun()
+        else:
+            st.info("Nenhum vídeo cadastrado para este elemento.")
 
 st.markdown("---")
 st.subheader("📊 Tabela Periódica Completa")

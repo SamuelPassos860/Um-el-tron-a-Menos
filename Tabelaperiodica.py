@@ -412,11 +412,9 @@ def render_element_card(elem):
     )
     card_style = (
         f"--cat-color:{cor}; --cat-rgb:{rgb}; "
-        f"border-color:{brilho_forte}; "
-        f"background:radial-gradient(circle at 50% 18%, {brilho_medio} 0%, {brilho_suave} 38%, rgba(255,255,255,0) 74%), "
-        "linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.24) 46%, rgba(255,255,255,0.05) 100%), "
-        f"{cor}; "
-        f"box-shadow:0 0 0 2px {brilho_forte}, 0 0 26px {brilho_medio}, 0 10px 24px rgba(15, 23, 42, 0.10), inset 0 0 22px {brilho_suave}, inset 0 1px 0 rgba(255,255,255,0.72);"
+        "border-color:rgba(255,255,255,0.78); "
+        "background:linear-gradient(145deg, #ffffff 0%, #f4f0ff 100%); "
+        f"box-shadow:0 0 0 1px {brilho_suave}, 0 8px 18px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,0.9);"
     )
 
     return (
@@ -587,13 +585,13 @@ def render_video_button_css():
         rules.append(
             f"""
             {selectors} {{
-                background: linear-gradient(145deg, #dffcf4 0%, #9eead9 100%) !important;
-                border-color: #14b8a6 !important;
-                color: #064e3b !important;
-                box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.22), 0 8px 18px rgba(15, 118, 110, 0.16) !important;
+                background: linear-gradient(145deg, #ffffff 0%, #f5f3ff 100%) !important;
+                border-color: #c084fc !important;
+                color: #111827 !important;
+                box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.34), 0 8px 18px rgba(88, 28, 135, 0.28) !important;
             }}
             {text_selectors} {{
-                color: #064e3b !important;
+                color: #111827 !important;
                 font-weight: 800;
             }}
             """
@@ -620,13 +618,13 @@ def render_selected_button_css():
 
     return f"""
     {selectors} {{
-        background: #e53935 !important;
-        border-color: #c62828 !important;
-        color: #ffffff !important;
-        box-shadow: 0 0 0 2px rgba(229, 57, 53, 0.24), 0 8px 18px rgba(198, 40, 40, 0.22) !important;
+        background: linear-gradient(145deg, #ffffff 0%, #ede9fe 100%) !important;
+        border-color: #a855f7 !important;
+        color: #111827 !important;
+        box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.58), 0 10px 24px rgba(126, 34, 206, 0.38) !important;
     }}
     {text_selectors} {{
-        color: #ffffff !important;
+        color: #111827 !important;
     }}
     """
 
@@ -639,19 +637,21 @@ st.markdown(
         padding-top: 2rem;
         padding-left: 1rem;
         padding-right: 1rem;
-        color: #111827;
+        color: #f8fafc;
     }
     html,
     body,
     .stApp {
-        color-scheme: light;
+        color-scheme: dark;
         background:
-            linear-gradient(180deg, #f3f4f6 0%, #e5e7eb 100%) !important;
-        color: #111827 !important;
+            radial-gradient(circle at 18% 10%, rgba(126, 34, 206, 0.42) 0%, rgba(126, 34, 206, 0.10) 32%, rgba(0, 0, 0, 0) 56%),
+            radial-gradient(circle at 86% 18%, rgba(168, 85, 247, 0.28) 0%, rgba(88, 28, 135, 0.08) 36%, rgba(0, 0, 0, 0) 60%),
+            linear-gradient(180deg, #050507 0%, #12071f 48%, #020103 100%) !important;
+        color: #f8fafc !important;
     }
     [data-testid="stAppViewContainer"] {
         background: transparent !important;
-        color: #111827 !important;
+        color: #f8fafc !important;
     }
     [data-testid="stHeader"] {
         background: transparent;
@@ -669,7 +669,12 @@ st.markdown(
     h1,
     h2,
     h3 {
-        color: #111827;
+        color: #f8fafc;
+    }
+    [data-testid="stTextInput"] input,
+    [data-testid="stSelectbox"] div,
+    [data-testid="stSelectbox"] span {
+        color: #111827 !important;
     }
     #MainMenu,
     header,
@@ -700,7 +705,7 @@ st.markdown(
         object-fit: cover;
         object-position: center;
         border-radius: 50%;
-        box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.14), 0 10px 28px rgba(168, 85, 247, 0.28);
     }
     .periodic-table-shell {
         width: 100%;
@@ -719,7 +724,7 @@ st.markdown(
         --cell-min: 76px;
     }
     .periodic-card {
-        --cat-color: #f2f2f2;
+        --cat-color: #ffffff;
         box-sizing: border-box;
         width: 100%;
         min-height: 92px;
@@ -728,22 +733,18 @@ st.markdown(
         border: 1px solid rgba(17, 24, 39, 0.14);
         border-radius: 8px;
         background:
-            radial-gradient(circle at 50% 18%, rgba(var(--cat-rgb), 0.52) 0%, rgba(var(--cat-rgb), 0.24) 36%, rgba(var(--cat-rgb), 0) 72%),
-            linear-gradient(145deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.24) 46%, rgba(255,255,255,0.05) 100%),
-            var(--cat-color);
+            linear-gradient(145deg, #ffffff 0%, #f4f0ff 100%);
         box-shadow:
-            0 0 0 2px rgba(var(--cat-rgb), 0.52),
-            0 0 20px rgba(var(--cat-rgb), 0.48),
-            0 10px 24px rgba(15, 23, 42, 0.10),
-            inset 0 0 18px rgba(var(--cat-rgb), 0.42),
-            inset 0 1px 0 rgba(255,255,255,0.72);
+            0 0 0 1px rgba(168, 85, 247, 0.24),
+            0 8px 18px rgba(0, 0, 0, 0.34),
+            inset 0 1px 0 rgba(255,255,255,0.9);
         display: grid;
         grid-template-rows: 16px 36px 18px;
         align-items: center;
         gap: 3px;
         overflow: hidden;
         position: relative;
-        color: inherit;
+        color: #111827;
         text-decoration: none;
         cursor: pointer;
         transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
@@ -794,11 +795,9 @@ st.markdown(
         transform: translateY(-3px);
         border-color: rgba(17, 24, 39, 0.24);
         box-shadow:
-            0 0 0 3px rgba(var(--cat-rgb), 0.72),
-            0 0 32px rgba(var(--cat-rgb), 0.68),
-            0 16px 34px rgba(15, 23, 42, 0.16),
-            inset 0 0 22px rgba(var(--cat-rgb), 0.54),
-            inset 0 1px 0 rgba(255,255,255,0.8);
+            0 0 0 2px rgba(192, 132, 252, 0.48),
+            0 10px 22px rgba(168, 85, 247, 0.28),
+            inset 0 1px 0 rgba(255,255,255,0.9);
     }
     .periodic-card.is-marked {
         opacity: 0.58;
@@ -808,9 +807,9 @@ st.markdown(
     }
     .periodic-empty {
         min-height: 78px;
-        border: 1px dashed rgba(15, 23, 42, 0.08);
+        border: 1px dashed rgba(255, 255, 255, 0.18);
         border-radius: 7px;
-        background: rgba(255,255,255,0.24);
+        background: rgba(255,255,255,0.08);
     }
     .periodic-empty-button {
         min-height: 92px;
@@ -839,8 +838,8 @@ st.markdown(
     .st-key-periodic-main-grid [data-testid="stButton"] > button,
     .st-key-periodic-lanth-grid [data-testid="stButton"] > button,
     .st-key-periodic-act-grid [data-testid="stButton"] > button {
-        background: linear-gradient(145deg, rgba(255,255,255,0.96) 0%, rgba(243,244,246,0.98) 100%) !important;
-        border: 1px solid rgba(17, 24, 39, 0.18) !important;
+        background: linear-gradient(145deg, #ffffff 0%, #f4f0ff 100%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.78) !important;
         color: #111827 !important;
         min-height: 92px;
         height: 92px;
@@ -852,7 +851,7 @@ st.markdown(
         white-space: pre-line;
         line-height: 1.12;
         overflow: hidden;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.08) !important;
+        box-shadow: 0 0 0 1px rgba(168, 85, 247, 0.24), 0 8px 18px rgba(0, 0, 0, 0.34) !important;
     }
     .st-key-periodic_main_grid [data-testid="stButton"] > button:hover,
     .st-key-periodic_lanth_grid [data-testid="stButton"] > button:hover,
@@ -860,9 +859,10 @@ st.markdown(
     .st-key-periodic-main-grid [data-testid="stButton"] > button:hover,
     .st-key-periodic-lanth-grid [data-testid="stButton"] > button:hover,
     .st-key-periodic-act-grid [data-testid="stButton"] > button:hover {
-        background: linear-gradient(145deg, #ffffff 0%, #e0f2fe 100%) !important;
-        border-color: #0284c7 !important;
+        background: linear-gradient(145deg, #ffffff 0%, #ede9fe 100%) !important;
+        border-color: #c084fc !important;
         color: #0f172a !important;
+        box-shadow: 0 0 0 2px rgba(192, 132, 252, 0.48), 0 10px 22px rgba(168, 85, 247, 0.28) !important;
     }
     .st-key-periodic_main_grid [data-testid="stButton"] > button *,
     .st-key-periodic_lanth_grid [data-testid="stButton"] > button *,
@@ -924,9 +924,9 @@ st.markdown(
         white-space: nowrap;
         width: 100%;
     }
-    .table-header { font-weight: 700; color: #222; text-align: center; min-height: 20px; }
-    .small-note { font-size: 13px; color: #555; }
-    .video-box { border: 1px solid #e3e3e3; border-radius: 14px; padding: 16px; background: #fff; box-shadow: 0 10px 20px rgba(0,0,0,0.04); }
+    .table-header { font-weight: 700; color: #f8fafc; text-align: center; min-height: 20px; }
+    .small-note { font-size: 13px; color: #d8b4fe; }
+    .video-box { border: 1px solid rgba(216, 180, 254, 0.34); border-radius: 14px; padding: 16px; background: rgba(17, 7, 31, 0.82); box-shadow: 0 12px 26px rgba(0,0,0,0.32); }
     .video-box h3 { margin-top: 0; }
     @media (max-width: 900px) {
         .block-container {

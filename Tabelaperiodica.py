@@ -376,7 +376,7 @@ def toggle_elemento(z):
 def selecionar_elemento_video(z):
     st.session_state.elemento_video_z = z
     st.query_params["elemento_video"] = str(z)
-    st.session_state.elemento_video_select_z = z
+    st.session_state.sincronizar_select_video = True
 
 
 def elemento_tem_videos(z):
@@ -1078,6 +1078,8 @@ with videos_col:
     elementos_ordenados = sorted(ELEMENTOS, key=lambda e: e["z"])
     elementos_por_z = {elem["z"]: elem for elem in elementos_ordenados}
     if not isinstance(st.session_state.get("elemento_video_select_z"), int):
+        st.session_state.elemento_video_select_z = st.session_state.elemento_video_z
+    elif st.session_state.pop("sincronizar_select_video", False):
         st.session_state.elemento_video_select_z = st.session_state.elemento_video_z
     selected_index = next(
         (

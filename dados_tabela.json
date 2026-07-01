@@ -1,6 +1,14 @@
 {
   "elementos_falados": [
-    15
+    1,
+    2,
+    12,
+    15,
+    17,
+    29,
+    35,
+    80,
+    88
   ],
   "videos": {
     "15": [
@@ -55,6 +63,20 @@
         "url": "https://www.youtube.com/watch?v=TIv-S_AJos4",
         "descricao": "Hidrogênio verde",
         "data": "26/06/2026 20:26"
+      }
+    ],
+    "80": [
+      {
+        "url": "https://www.youtube.com/watch?v=wfkzQioNioc",
+        "descricao": "O único metal líquido do mundo esconde segredos ASSUSTADORES! 😱🧪",
+        "data": "01/07/2026 19:57"
+      }
+    ],
+    "17": [
+      {
+        "url": "https://www.youtube.com/watch?v=gGia0Y_7SE4",
+        "descricao": "O elemento que salvou bilhões de vidas... e criou uma das armas mais cruéis da história.",
+        "data": "01/07/2026 19:58"
       }
     ]
   }

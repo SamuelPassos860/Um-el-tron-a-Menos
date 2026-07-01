@@ -399,26 +399,29 @@ def sincronizar_elementos_com_videos():
 sincronizar_elementos_com_videos()
 
 
-def render_element_card(elem):
+def render_element_card(elem, extra_style=""):
     marcado = elem["z"] in elementos_contabilizados()
-    cor = CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
+    tem_video = elemento_tem_videos(elem["z"])
+    cor = "#ef4444" if tem_video else CORES_CATEGORIA.get(elem["categoria"], "#f2f2f2")
     rgb = hex_to_rgb(cor)
     brilho_forte = f"rgba({rgb}, 0.72)"
     brilho_medio = f"rgba({rgb}, 0.48)"
     brilho_suave = f"rgba({rgb}, 0.26)"
     marcado_class = " is-marked" if marcado else ""
+    video_class = " has-video" if tem_video else ""
     title = html.escape(
         f"{elem['z']} - {elem['nome']} ({elem['símbolo']}) | {elem['categoria']} | Massa {MASSAS_ATOMICAS.get(elem['z'], '')}"
     )
     card_style = (
         f"--cat-color:{cor}; --cat-rgb:{rgb}; "
         "border-color:rgba(255,255,255,0.78); "
-        "background:linear-gradient(145deg, #ffffff 0%, #f4f0ff 100%); "
+        f"background:{'linear-gradient(145deg, #fee2e2 0%, #ef4444 100%)' if tem_video else 'linear-gradient(145deg, #ffffff 0%, #f4f0ff 100%)'}; "
         f"box-shadow:0 0 0 1px {brilho_suave}, 0 8px 18px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255,255,255,0.9);"
+        f"{extra_style}"
     )
 
     return (
-        f"<a class='periodic-card{marcado_class}' href='?elemento_video={elem['z']}' style='{card_style}' title='{title}'>"
+        f"<a class='periodic-card{marcado_class}{video_class}' href='?elemento_video={elem['z']}' style='{card_style}' title='{title}'>"
         f"<span class='periodic-glow-strip' style='background:{brilho_forte}; box-shadow:0 0 18px {brilho_forte};'></span>"
         f"<div class='periodic-atomic'>{elem['z']}</div>"
         f"<div class='periodic-symbol'>{html.escape(elem['símbolo'])}</div>"
@@ -441,15 +444,13 @@ def hex_to_rgb(hex_color):
 def render_periodic_grid(rows, columns, lookup):
     cells = []
     for header in range(1, columns + 1):
-        cells.append(f"<div class='table-header'>{header}</div>")
+        cells.append(f"<div class='table-header' style='grid-column:{header}; grid-row:1;'>{header}</div>")
 
     for row in rows:
         for column in range(1, columns + 1):
             elem = lookup.get((row, column))
-            if elem is None:
-                cells.append("<div class='periodic-empty'></div>")
-            else:
-                cells.append(render_element_card(elem))
+            if elem is not None:
+                cells.append(render_element_card(elem, f"grid-column:{column}; grid-row:{row + 1};"))
 
     return (
         "<div class='periodic-table-shell'>"
@@ -802,14 +803,33 @@ st.markdown(
     .periodic-card.is-marked {
         opacity: 0.58;
     }
+    .periodic-card.has-video {
+        opacity: 1;
+        border-color: rgba(254, 202, 202, 0.98) !important;
+        box-shadow:
+            0 0 0 2px rgba(239, 68, 68, 0.52),
+            0 10px 24px rgba(127, 29, 29, 0.42),
+            inset 0 1px 0 rgba(255,255,255,0.72) !important;
+    }
+    .periodic-card.has-video .periodic-symbol,
+    .periodic-card.has-video .periodic-name,
+    .periodic-card.has-video .periodic-atomic {
+        color: #450a0a;
+    }
     .periodic-card.is-marked .periodic-name {
         text-decoration: line-through;
     }
+    .periodic-card.has-video .periodic-name {
+        text-decoration: none;
+    }
     .periodic-empty {
         min-height: 78px;
-        border: 1px dashed rgba(255, 255, 255, 0.18);
-        border-radius: 7px;
-        background: rgba(255,255,255,0.08);
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+        box-shadow: none;
+        pointer-events: none;
+        visibility: hidden;
     }
     .periodic-empty-button {
         min-height: 92px;
@@ -1200,19 +1220,22 @@ st.markdown("---")
 st.subheader("📊 Tabela Periódica Completa")
 
 with st.container(key="periodic_main_grid"):
-    render_periodic_button_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO, "periodic_main")
+    st.markdown(
+        render_periodic_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO),
+        unsafe_allow_html=True,
+    )
 st.caption("Clique em um elemento da tabela para mudar a busca e mostrar os vídeos no agregador.")
 
 st.markdown("---")
 if LANTANIDEOS:
     st.subheader("🎓 Lantanídeos")
     with st.container(key="periodic_lanth_grid"):
-        render_series_button_grid(LANTANIDEOS, "periodic_lanth")
+        st.markdown(render_series_grid(LANTANIDEOS), unsafe_allow_html=True)
 
 if ACTINIDEOS:
     st.subheader("🎓 Actinídeos")
     with st.container(key="periodic_act_grid"):
-        render_series_button_grid(ACTINIDEOS, "periodic_act")
+        st.markdown(render_series_grid(ACTINIDEOS), unsafe_allow_html=True)
 
 st.markdown("---")
 st.markdown(

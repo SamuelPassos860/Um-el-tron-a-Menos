@@ -1140,11 +1140,27 @@ with videos_col:
     st.caption(
         f"Vídeos exibidos para {elemento_selecionado['símbolo']} - {elemento_selecionado['nome']}."
     )
-    if IS_ADMIN:
-        url_video = st.text_input("URL do vídeo", placeholder="https://www.youtube.com/watch?v=...", key="video_url_input")
-        descricao_video = st.text_input("Descrição do vídeo", placeholder="Ex: Aula sobre o elemento", key="descricao_input")
+    feedback_video = st.session_state.pop("feedback_video", None)
+    if feedback_video == "adicionado":
+        st.success("Vídeo cadastrado com sucesso!")
+    elif feedback_video == "removido":
+        st.success("Vídeo removido com sucesso!")
 
-        if st.button("➕ Adicionar vídeo", use_container_width=True):
+    if IS_ADMIN:
+        with st.form("form_adicionar_video", clear_on_submit=True):
+            url_video = st.text_input(
+                "URL do vídeo",
+                placeholder="https://www.youtube.com/watch?v=...",
+                key="video_url_input",
+            )
+            descricao_video = st.text_input(
+                "Descrição do vídeo",
+                placeholder="Ex: Aula sobre o elemento",
+                key="descricao_input",
+            )
+            adicionar_video = st.form_submit_button("➕ Adicionar vídeo", use_container_width=True)
+
+        if adicionar_video:
             if url_video.strip() and descricao_video.strip():
                 z = elemento_selecionado["z"]
                 st.session_state.videos.setdefault(z, []).append(
@@ -1156,7 +1172,8 @@ with videos_col:
                 )
                 st.session_state.elementos_falados.add(z)
                 save_app_data()
-                st.success("Vídeo cadastrado com sucesso!")
+                st.session_state.feedback_video = "adicionado"
+                st.rerun()
             else:
                 st.error("Preencha URL e descrição antes de adicionar.")
     else:
@@ -1174,6 +1191,7 @@ with videos_col:
                 if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
                     st.session_state.videos[z].pop(idx)
                     save_app_data()
+                    st.session_state.feedback_video = "removido"
                     st.rerun()
         else:
             st.info("Nenhum vídeo cadastrado para este elemento.")

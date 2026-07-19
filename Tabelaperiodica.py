@@ -276,8 +276,9 @@ ELEMENTOS_POR_POSICAO = {
 
 LANTANIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Lantanídeo"]
 ACTINIDEOS = [elem for elem in ELEMENTOS if elem["categoria"] == "Actinídeo"]
-DATA_FILE = Path("dados_tabela.json")
-LOGO_FILE = Path("assets/logo.png")
+APP_DIR = Path(__file__).resolve().parent
+DATA_FILE = APP_DIR / "dados_tabela.json"
+LOGO_FILE = APP_DIR / "assets" / "logo.png"
 DEFAULT_ADMIN_PASSWORD = "admin"
 
 
@@ -299,7 +300,9 @@ def save_app_data():
         "elementos_falados": sorted(st.session_state.elementos_falados),
         "videos": {str(z): itens for z, itens in st.session_state.videos.items()},
     }
-    DATA_FILE.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp_file = DATA_FILE.with_suffix(".tmp")
+    temp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp_file.replace(DATA_FILE)
 
 
 dados_iniciais = load_app_data()
@@ -1220,22 +1223,19 @@ st.markdown("---")
 st.subheader("📊 Tabela Periódica Completa")
 
 with st.container(key="periodic_main_grid"):
-    st.markdown(
-        render_periodic_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO),
-        unsafe_allow_html=True,
-    )
+    render_periodic_button_grid(range(1, 8), 18, ELEMENTOS_POR_POSICAO, "periodic_main")
 st.caption("Clique em um elemento da tabela para mudar a busca e mostrar os vídeos no agregador.")
 
 st.markdown("---")
 if LANTANIDEOS:
     st.subheader("🎓 Lantanídeos")
     with st.container(key="periodic_lanth_grid"):
-        st.markdown(render_series_grid(LANTANIDEOS), unsafe_allow_html=True)
+        render_series_button_grid(LANTANIDEOS, "periodic_lanth")
 
 if ACTINIDEOS:
     st.subheader("🎓 Actinídeos")
     with st.container(key="periodic_act_grid"):
-        st.markdown(render_series_grid(ACTINIDEOS), unsafe_allow_html=True)
+        render_series_button_grid(ACTINIDEOS, "periodic_act")
 
 st.markdown("---")
 st.markdown(

@@ -3,6 +3,7 @@ import html
 import json
 import os
 import streamlit as st
+import requests
 from datetime import datetime
 from pathlib import Path
 
@@ -281,18 +282,132 @@ DATA_FILE = APP_DIR / "dados_tabela.json"
 LOGO_FILE = APP_DIR / "assets" / "logo.png"
 DEFAULT_ADMIN_PASSWORD = "admin"
 
+# Catálogo permanente: estes vídeos fazem parte do código e, por isso, voltam
+# automaticamente quando o Streamlit reinicia ou sai da hibernação.
+VIDEOS_FIXOS = {
+    1: [
+        {
+            "url": "https://www.youtube.com/watch?v=TIv-S_AJos4",
+            "descricao": "Hidrogênio verde",
+            "data": "26/06/2026 20:26",
+        }
+    ],
+    2: [
+        {
+            "url": "https://www.youtube.com/watch?v=EsSfHW56stQ&t=1s",
+            "descricao": "O Gás Hélio está acabando? A crise que ninguém te contou.",
+            "data": "26/06/2026 20:25",
+        }
+    ],
+    12: [
+        {
+            "url": "https://www.youtube.com/watch?v=_odnlcZslb8&t=1s",
+            "descricao": "Por que o magnésio está em TUDO? (E você nem sabia!)",
+            "data": "26/06/2026 20:22",
+        }
+    ],
+    15: [
+        {
+            "url": "https://www.youtube.com/watch?v=lYa1nyDQUaw",
+            "descricao": "Você sabia que o fósforo não é só o que acende o fogo?",
+            "data": "25/06/2026 15:53",
+        }
+    ],
+    17: [
+        {
+            "url": "https://www.youtube.com/watch?v=gGia0Y_7SE4",
+            "descricao": "O elemento que salvou bilhões de vidas... e criou uma das armas mais cruéis da história.",
+            "data": "01/07/2026 19:58",
+        }
+    ],
+    29: [
+        {
+            "url": "https://www.youtube.com/watch?v=sQc21h03kFk&t=2s",
+            "descricao": "O METAL MAIS SURPREENDENTE DA NATUREZA (E não é pelo brilho!)",
+            "data": "26/06/2026 20:24",
+        }
+    ],
+    35: [
+        {
+            "url": "https://www.youtube.com/watch?v=IjLM8-Q1vFc",
+            "descricao": "O Lado Sombrio e Fascinante do Bromo! 💥",
+            "data": "26/06/2026 20:23",
+        },
+        {
+            "url": "https://www.youtube.com/watch?v=wfkzQioNioc&t=178s",
+            "descricao": "O único metal líquido do mundo esconde segredos ASSUSTADORES! 😱🧪",
+            "data": "26/06/2026 20:24",
+        },
+    ],
+    80: [
+        {
+            "url": "https://www.youtube.com/watch?v=wfkzQioNioc",
+            "descricao": "O único metal líquido do mundo esconde segredos ASSUSTADORES! 😱🧪",
+            "data": "01/07/2026 19:57",
+        }
+    ],
+    88: [
+        {
+            "url": "https://www.youtube.com/watch?v=8-r4UZAhDig",
+            "descricao": "A Física que derreteu mandíbulas: Por que o Rádio é 1 milhão de vezes mais ativo que o Urânio?",
+            "data": "26/06/2026 20:25",
+        }
+    ],
+}
+
+
+def copiar_videos_fixos():
+    return {
+        z: [video.copy() for video in videos]
+        for z, videos in VIDEOS_FIXOS.items()
+    }
+
+
+def mesclar_com_videos_fixos(videos_salvos):
+    """Mantém o catálogo do código e acrescenta links salvos sem duplicá-los."""
+    videos = copiar_videos_fixos()
+    for z, itens in videos_salvos.items():
+        z = int(z)
+        urls_existentes = {video["url"] for video in videos.get(z, [])}
+        for item in itens:
+            if item.get("url") not in urls_existentes:
+                videos.setdefault(z, []).append(item)
+                urls_existentes.add(item.get("url"))
+    return videos
+
+
+def video_eh_fixo(z, url):
+    return any(video["url"] == url for video in VIDEOS_FIXOS.get(z, []))
+
 
 def load_app_data():
+    backend_url = os.getenv("BACKEND_URL")
+    headers = {}
+    token = os.getenv("BACKEND_TOKEN")
+    if token:
+        headers["X-API-TOKEN"] = token
+
+    if backend_url:
+        try:
+            resp = requests.get(f"{backend_url.rstrip('/')}/data", headers=headers, timeout=8)
+            if resp.status_code == 200:
+                data = resp.json()
+                videos = mesclar_com_videos_fixos(data.get("videos", {}))
+                elementos_falados = set(data.get("elementos_falados", [])) | set(VIDEOS_FIXOS)
+                return {"elementos_falados": elementos_falados, "videos": videos}
+        except Exception:
+            pass
+
     if not DATA_FILE.exists():
-        return {"elementos_falados": set(), "videos": {}}
+        return {"elementos_falados": set(VIDEOS_FIXOS), "videos": copiar_videos_fixos()}
 
     try:
         data = json.loads(DATA_FILE.read_text(encoding="utf-8"))
-        videos = {int(z): itens for z, itens in data.get("videos", {}).items()}
-        elementos_falados = set(data.get("elementos_falados", []))
+        videos = mesclar_com_videos_fixos(data.get("videos", {}))
+        elementos_falados = set(data.get("elementos_falados", [])) | set(VIDEOS_FIXOS)
         return {"elementos_falados": elementos_falados, "videos": videos}
     except (OSError, json.JSONDecodeError, TypeError, ValueError):
-        return {"elementos_falados": set(), "videos": {}}
+        return {"elementos_falados": set(VIDEOS_FIXOS), "videos": copiar_videos_fixos()}
 
 
 def save_app_data():
@@ -300,6 +415,19 @@ def save_app_data():
         "elementos_falados": sorted(st.session_state.elementos_falados),
         "videos": {str(z): itens for z, itens in st.session_state.videos.items()},
     }
+    backend_url = os.getenv("BACKEND_URL")
+    headers = {"Content-Type": "application/json"}
+    token = os.getenv("BACKEND_TOKEN")
+    if token:
+        headers["X-API-TOKEN"] = token
+
+    if backend_url:
+        try:
+            requests.post(f"{backend_url.rstrip('/')}/data", headers=headers, json=data, timeout=8)
+            return
+        except Exception:
+            pass
+
     temp_file = DATA_FILE.with_suffix(".tmp")
     temp_file.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     temp_file.replace(DATA_FILE)
@@ -1170,6 +1298,10 @@ with videos_col:
         st.success("Vídeo removido com sucesso!")
 
     if IS_ADMIN:
+        st.caption(
+            "Os vídeos do catálogo permanente ficam salvos no código. "
+            "Novos cadastros pela tela dependem do backend configurado para persistir após reinícios."
+        )
         with st.form("form_adicionar_video", clear_on_submit=True):
             url_video = st.text_input(
                 "URL do vídeo",
@@ -1211,7 +1343,9 @@ with videos_col:
                 st.markdown(f"**{html.escape(video['descricao'])}**")
                 st.video(video["url"])
                 st.caption(f"Adicionado em {video['data']}")
-                if IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
+                if video_eh_fixo(z, video["url"]):
+                    st.caption("🔒 Vídeo permanente (definido no código)")
+                elif IS_ADMIN and st.button("Remover vídeo", key=f"del_{z}_{idx}"):
                     st.session_state.videos[z].pop(idx)
                     save_app_data()
                     st.session_state.feedback_video = "removido"

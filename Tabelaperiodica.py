@@ -299,11 +299,32 @@ VIDEOS_FIXOS = {
             "data": "26/06/2026 20:25",
         }
     ],
+    9: [
+        {
+            "url": "https://www.youtube.com/watch?v=jn9FNG5hWjs",
+            "descricao": "Por Que o Flúor é TÃO Reativo?",
+            "data": "13/10/2026",
+        }
+    ],
+    11: [
+        {
+            "url": "https://www.youtube.com/watch?v=UM6tzxfCPvE",
+            "descricao": "O metal que a ciência levou 200 anos para entender",
+            "data": "13/10/2026",
+        }
+    ],
     12: [
         {
             "url": "https://www.youtube.com/watch?v=_odnlcZslb8&t=1s",
             "descricao": "Por que o magnésio está em TUDO? (E você nem sabia!)",
             "data": "26/06/2026 20:22",
+        }
+    ],
+    13: [
+        {
+            "url": "https://www.youtube.com/watch?v=Mf-2Ai5E2Y0&t=22s",
+            "descricao": "Você sabia que, no século XIX, o alumínio era mais valioso que o ouro? 🤯",
+            "data": "13/10/2026",
         }
     ],
     15: [
@@ -320,6 +341,20 @@ VIDEOS_FIXOS = {
             "data": "01/07/2026 19:58",
         }
     ],
+    22: [
+        {
+            "url": "https://www.youtube.com/watch?v=WDut3wAEDtc&t=11s",
+            "descricao": "TITÂNIO: Por Que Não Fazemos Tudo Com Esse Metal?",
+            "data": "13/10/2026",
+        }
+    ],
+    27: [
+        {
+            "url": "https://www.youtube.com/watch?v=q9Y6wDATNN4&t=233s",
+            "descricao": "Por que esse metal da Idade Média muda de cor e corta aço?",
+            "data": "13/10/2026",
+        }
+    ],
     29: [
         {
             "url": "https://www.youtube.com/watch?v=sQc21h03kFk&t=2s",
@@ -332,12 +367,28 @@ VIDEOS_FIXOS = {
             "url": "https://www.youtube.com/watch?v=IjLM8-Q1vFc",
             "descricao": "O Lado Sombrio e Fascinante do Bromo! 💥",
             "data": "26/06/2026 20:23",
-        },
+        }
+    ],
+    47: [
         {
-            "url": "https://www.youtube.com/watch?v=wfkzQioNioc&t=178s",
-            "descricao": "O único metal líquido do mundo esconde segredos ASSUSTADORES! 😱🧪",
-            "data": "26/06/2026 20:24",
-        },
+            "url": "https://www.youtube.com/watch?v=Id5zu299ooU&t=3s",
+            "descricao": "A prata fez muito mais pela humanidade do que o ouro",
+            "data": "13/10/2026",
+        }
+    ],
+    55: [
+        {
+            "url": "https://www.youtube.com/watch?v=ThIzNEXrNDE&t=152s",
+            "descricao": "O Metal que Derrete na Mão e Quase Destruiu uma Cidade: A História do Césio",
+            "data": "13/10/2026",
+        }
+    ],
+    79: [
+        {
+            "url": "https://www.youtube.com/watch?v=Uc2VDeJqjUk",
+            "descricao": "O Metal que Veio do Fim do Universo (E por que ele vale tanto?)",
+            "data": "13/10/2026",
+        }
     ],
     80: [
         {
@@ -370,6 +421,9 @@ def mesclar_com_videos_fixos(videos_salvos):
         z = int(z)
         urls_existentes = {video["url"] for video in videos.get(z, [])}
         for item in itens:
+            # Corrige o vínculo antigo de um vídeo sobre mercúrio com o Bromo.
+            if z == 35 and item.get("url") == "https://www.youtube.com/watch?v=wfkzQioNioc&t=178s":
+                continue
             if item.get("url") not in urls_existentes:
                 videos.setdefault(z, []).append(item)
                 urls_existentes.add(item.get("url"))
